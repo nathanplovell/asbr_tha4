@@ -35,7 +35,6 @@
 function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
 
     Tsd = config_b;
-    M = robot.transf.M;
 
     t_vec = config_a';
     fprintf("Start config (t_vec):\n")
@@ -95,21 +94,18 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
 
         %%% TEST: Formulate least-squares optimization
 
-        % Recalculate the current end-effector configuration
-        T_curr = FK_space(robot,t_vec,0);
-
         % Objective function
         p_goal = Tsd(1:3,4);
         %t = M*p_tip 
-        t = T_curr(1:3,4); % Have to figure out how I'm dealing with the tip
+        t = M(1:3,4); % Have to figure out how I'm dealing with the tip
         J_a = Jb(1:3,:);
         J_e = Jb(4:6,:);
         C = vec2SkewSym(-t)*J_a + J_e;
         d = t - p_goal; % Do I have to change func to only accept p_goal or can I extract from config_b
 
         % Constraints
-        lb = robot.limits(:,1); % Lower joint limits
-        ub = robot.limits(:,2); % Upper joint limits
+        lb = panda.limits(:,1); % Lower joint limits
+        ub = panda.limits(:,2); % Upper joint limits
         % Not including 3mm constraint (yet) because redundant and
         % nonlinear
 
