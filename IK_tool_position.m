@@ -43,12 +43,8 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
     fprintf("Start config (t_vec):\n")
     disp(t_vec)
 
-    % error thresholds
-    w_err = 0.001;
-    v_err = 0.001;
+    physical_err = 10; % initializing arbitrarily high error to start loop
 
-    Vb_v_err = 1000; % initializing arbitrarily high estimate to start loop
-    Vb_w_err = 1000; 
     it = 0; % initializing iteration counter
 
     % initializing array to append joint angles if plotting is desired
@@ -57,71 +53,39 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
     end
 
     % loop until desired error thresholds are met
-    while (Vb_v_err > v_err) || (Vb_w_err > w_err)
+    % accounting for 3mm constraint in loop
+    while physical_err > 0.003
         
         % position at current joint guess
         Tsb = FK_space(robot,t_vec',0);
 
-        % calculate error of guess
-        Vb_skew = logm(inv(Tsb)*Tsd);
-        Vb_w = [Vb_skew(3,2), Vb_skew(1,3), Vb_skew(2,1)]'; 
-        Vb_v = Vb_skew(1:3, 4);
-        Vb = [Vb_w; Vb_v];
-
-        % error calculation will use maximum of error from magnitude of 
-        % angular or linear velocities
-        Vb_w_err = norm(Vb_w);
-        Vb_v_err = norm(Vb_v);
 
         % print out results from iteration
         fprintf("Iteration: %d\n", it)
-        fprintf("Vb w error: %d\n", Vb_w_err)
-        fprintf("Vb v error: %d\n", Vb_v_err)
 
         % re-calculating the space Jacobian for each iteration
         Js = J_space(robot, t_vec');
 
-        % % check if Jacobian is square
-        % if size(Jb, 1) == size(Jb, 2) 
-        %     % use normal jacobian
-        %     j_dag = inv(Jb);
-        % 
-        % % redundant case, use right matrix pseudoinverse
-        % elseif size(Jb,1) < size(Jb,2) 
-        %     j_dag = Jb'*inv(Jb*Jb');
-        % 
-        % % underactuated case, use left pseudoinverse 
-        % else 
-        %     j_dag = (inv(Jb'*Jb))*Jb';
-        % end
-
-        %%% TEST: Formulate least-squares optimization
+        % Formulate least-squares optimization
 
         % Objective function
         %t = M*p_tip 
-        t = Tsb(1:3,4) % Have to figure out how I'm dealing with the tip
+        t = Tsb(1:3,4); % Have to figure out how I'm dealing with the tip
         %t = [0;0;0];
         J_a = Js(1:3,:);
         J_e = Js(4:6,:);
         C = vec2SkewSym(-t)*J_a + J_e;
-        d = -(t + p_goal);
-        %d = p_goal; % Do I have to change func to only accept p_goal or can I extract from config_b
-        %d = 
+        d = -t + p_goal;
 
         % Constraints
         lb = robot.limits(:,1) - t_vec; % Lower joint limits
         ub = robot.limits(:,2) - t_vec; % Upper joint limits
-        % Not including 3mm constraint (yet) because redundant and
-        % nonlinear
 
         % Solve least-squares optimization
         x0 = [0 0 0 0 0 0 0]';
-        dt_vec = lsqlin(C,d,[],[],[],[],lb,ub,x0)
+        dt_vec = lsqlin(C,d,[],[],[],[],lb,ub,x0);
 
-        norm(C*dt_vec - d)
-
-        % Need an if clause somewhere that checks the 3mm constraint
-
+        est_err = norm(C*dt_vec - d)
 
         % updating values for next iteration
         t_new = t_vec + dt_vec;
@@ -130,6 +94,10 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
         fprintf("t_vec: \n")
         disp(t_vec)
         it = it + 1; % incrementing iteration counter
+
+        T_est = FK_space(robot, t_new', false);
+        p_est = T_est(1:3, 4);
+        physical_err = norm(p_goal-p_est)
 
         if plot == true
             t_vec_mat = [t_vec_mat; t_vec'];
