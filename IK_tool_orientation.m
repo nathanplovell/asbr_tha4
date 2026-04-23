@@ -72,14 +72,14 @@ function [t_vec, t_vec_mat] = IK_tool_orientation(robot, config_a, config_b, plo
         % Objective 1 - distance to target
         C1 = vec2SkewSym(-t)*J_a + J_e;
         d1 = -t + p_goal;
-        zeta = 0.5; % Weight of objective 1
+        zeta = 0.9; % Weight of objective 1
 
         % Objective 2 - orientation of tool shaft
         R = Tsb(1:3,1:3); % Current orientation of tool shaft
-        zs = panda.transf.Ts(1:3,3); % z-axis of the space frame
-        C2 = vec2SkewSym(-R*zs)*J_a;
+        zs = robot.transf.Ts(1:3,3); % z-axis of the space frame
+        C2 = vec2SkewSym(-(R*zs))*J_a;
         d2 = [0;0;0]; % Goal is no change in orientation
-        eta = 0.5; % Weight of objective 2
+        eta = 0.1; % Weight of objective 2
 
         % Optimization constraints
         lb = robot.limits(:,1) - t_vec; % Lower joint limits
