@@ -1,13 +1,14 @@
 %% %% ME384R - ASBR - THA4
 % Written by Clara Summerford and Nathan Lovell
 %
-% Finds the inverse kinematics iteratively using the body Jacobian of the
-% robot and knowing a desired final end-effector position. Uses the 
-% Newton-Raphson root-finding method as a basis for finding a
-% solution that minimizes the error to near zero. The error is the
-% difference between the desired end-effector position and current
-% end-effector positon of each iteration. 
-
+% Commands a robot to reach a target position with its end-effector while
+% staying within the robot's joint limits. This function achieves this goal
+% via a linear least-squares optimization instead of using inverse
+% kinematics. The problem assumes the goal is to keep the end-effector
+% within 3mm of the target point, and to minimize changes in the orientation 
+% of the tool shaft. Starting and target points are given by config_a and 
+% config_b, respectively.
+% 
 % Input:
 % robot = a struct of the following form:
 % % % panda.screws = 6xn space Jacobian in terms of symbolic thetas
@@ -31,8 +32,7 @@
 % t_vec_mat = mxn array of joint angles for each iteration until the IK
 % algorithm converges, used to plot during function testing and validation
 
-
-function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
+function [t_vec, t_vec_mat] = IK_tool_orientation(robot, config_a, config_b, plot)
 
     Tsd = config_b; % Target configuration
     p_goal = Tsd(1:3,4); % Goal point - location of Tsd
@@ -67,14 +67,27 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
         t = Tsb(1:3,4); % Tip location corresponds to end-effector frame after tool added
         J_a = Js(1:3,:); % Angular component of space Jacobian
         J_e = Js(4:6,:); % Linear component of space Jacobian
-        C = vec2SkewSym(-t)*J_a + J_e;
-        d = -t + p_goal;
+
+
+        % Objective 1 - distance to target
+        C1 = vec2SkewSym(-t)*J_a + J_e;
+        d1 = -t + p_goal;
+        zeta = 0.5; % Weight of objective 1
+
+        % Objective 2 - orientation of tool shaft
+        R = Tsb(1:3,1:3); % Current orientation of tool shaft
+        zs = panda.transf.Ts(1:3,3); % z-axis of the space frame
+        C2 = vec2SkewSym(-R*zs)*J_a;
+        d2 = [0;0;0]; % Goal is no change in orientation
+        eta = 0.5; % Weight of objective 2
 
         % Optimization constraints
         lb = robot.limits(:,1) - t_vec; % Lower joint limits
         ub = robot.limits(:,2) - t_vec; % Upper joint limits
 
         % Solve least-squares optimization
+        C = [sqrt(zeta)*C1; sqrt(eta)*C2];
+        d = [sqrt(zeta)*d1; sqrt(eta)*d2];
         dt_vec = lsqlin(C,d,[],[],[],[],lb,ub)
 
         % "Estimated error" i.e. minimum of the objective function
@@ -87,7 +100,7 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
         disp(t_vec)
         it = it + 1; % incrementing iteration counter
 
-        
+        % New current position of end-effector (tool tip)
         T_est = FK_space(robot, t_new', false);
 
         % Calculate distance from goal (physical error)

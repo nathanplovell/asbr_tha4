@@ -1,13 +1,13 @@
 %% %% ME384R - ASBR - THA4
 % Written by Clara Summerford and Nathan Lovell
 %
-% Finds the inverse kinematics iteratively using the body Jacobian of the
-% robot and knowing a desired final end-effector position. Uses the 
-% Newton-Raphson root-finding method as a basis for finding a
-% solution that minimizes the error to near zero. The error is the
-% difference between the desired end-effector position and current
-% end-effector positon of each iteration. 
-
+% Commands a robot to reach a target position with its end-effector while
+% staying within the robot's joint limits. This function achieves this goal
+% via a linear least-squares optimization instead of using inverse
+% kinematics. The problem assumes the goal is to keep the end-effector
+% within 3mm of the target point. Starting and target points are given by
+% config_a and config_b, respectively.
+% 
 % Input:
 % robot = a struct of the following form:
 % % % panda.screws = 6xn space Jacobian in terms of symbolic thetas
@@ -34,12 +34,10 @@
 
 function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
 
-    Tsd = config_b;
-    p_goal = Tsd(1:3,4);
-    M = robot.transf.M;
-    %t_new = zeros(7,1);
+    Tsd = config_b; % Target configuration
+    p_goal = Tsd(1:3,4); % Goal point - location of Tsd
 
-    t_vec = config_a';
+    t_vec = config_a'; % Current joint angles
     fprintf("Start config (t_vec):\n")
     disp(t_vec)
 
@@ -59,43 +57,40 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
         % position at current joint guess
         Tsb = FK_space(robot,t_vec',0);
 
-
-        % print out results from iteration
+        % print out iteration number
         fprintf("Iteration: %d\n", it)
 
         % re-calculating the space Jacobian for each iteration
         Js = J_space(robot, t_vec');
 
-        % Formulate least-squares optimization
-
-        % Objective function
-        %t = M*p_tip 
-        t = Tsb(1:3,4); % Have to figure out how I'm dealing with the tip
-        %t = [0;0;0];
-        J_a = Js(1:3,:);
-        J_e = Js(4:6,:);
+        % Formulate least-squares objective function
+        t = Tsb(1:3,4); % Tip location corresponds to end-effector frame after tool added
+        J_a = Js(1:3,:); % Angular component of space Jacobian
+        J_e = Js(4:6,:); % Linear component of space Jacobian
         C = vec2SkewSym(-t)*J_a + J_e;
         d = -t + p_goal;
 
-        % Constraints
+        % Optimization constraints
         lb = robot.limits(:,1) - t_vec; % Lower joint limits
         ub = robot.limits(:,2) - t_vec; % Upper joint limits
 
         % Solve least-squares optimization
-        x0 = [0 0 0 0 0 0 0]';
-        dt_vec = lsqlin(C,d,[],[],[],[],lb,ub,x0);
+        dt_vec = lsqlin(C,d,[],[],[],[],lb,ub)
 
+        % "Estimated error" i.e. minimum of the objective function
         est_err = norm(C*dt_vec - d)
 
         % updating values for next iteration
         t_new = t_vec + dt_vec;
-        %t_new = t_new + dt_vec
         t_vec = t_new;
         fprintf("t_vec: \n")
         disp(t_vec)
         it = it + 1; % incrementing iteration counter
 
+        % New current position of end-effector (tool tip)
         T_est = FK_space(robot, t_new', false);
+
+        % Calculate distance from goal (physical error)
         p_est = T_est(1:3, 4);
         physical_err = norm(p_goal-p_est)
 
