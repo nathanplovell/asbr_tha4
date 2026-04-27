@@ -13,19 +13,18 @@ test5 = [0 0 0 -pi/12 0 0 0];
 test6 = [0 0 0 pi/12 0 0 0];
 
 % Plot 
-T1 = FK_space(panda, test5, true);
+T1 = FK_space(panda, test3, true);
 pause(1)
-T2 = FK_space(panda, test6, true);
+T2 = FK_space(panda, test4, true);
 pause(1)
 
-[test_result, t_vec_mat] = IK_tool_orientation(panda, test5, T2, true)
+[test_result, t_vec_mat] = IK_tool_position(panda, test3, T2, true)
 
 % Visualize the iterations
-IK_gif(panda,t_vec_mat,'IK_tool_orientation_test2.gif')
+%IK_gif(panda,t_vec_mat,'IK_tool_position_test1.gif')
 
-% figure
+% Plot the final configuration produced by the optimization
 test_plot = FK_space(panda, test_result, true);
 
 % Plot first iteration of the optimization
 test_plot2 = FK_space(panda, t_vec_mat(2,:), true)
-

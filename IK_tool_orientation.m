@@ -88,7 +88,9 @@ function [t_vec, t_vec_mat] = IK_tool_orientation(robot, config_a, config_b, plo
         % Solve least-squares optimization
         C = [sqrt(zeta)*C1; sqrt(eta)*C2];
         d = [sqrt(zeta)*d1; sqrt(eta)*d2];
-        dq_vec = lsqlin(C,d,[],[],[],[],lb,ub)
+        x0 = zeros(7,1);
+        options = optimoptions('lsqlin','Algorithm','active-set');
+        [dq_vec,resnorm] = lsqlin(C,d,[],[],[],[],lb,ub,x0,options)
 
         % "Estimated error" i.e. minimum of the objective function
         est_err = norm(C*dq_vec - d)
