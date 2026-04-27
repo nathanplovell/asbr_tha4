@@ -70,15 +70,22 @@ function [t_vec, t_vec_mat] = IK_tool_position(robot, config_a, config_b, plot)
         C = vec2SkewSym(-t)*J_a + J_e;
         d = -t + p_goal;
 
+        % % TEST - second objective limiting change in dq_vec
+        % C2 = eye(size(Js,2));
+        % d2 = zeros(size(Js,2),1);
+        % lam = 0.1;
+        % 
+        % C = [C1; sqrt(lam)*C2];
+        % d = [d1; sqrt(lam)*d2];
+
         % Optimization constraints
         lb = robot.limits(:,1) - t_vec; % Lower joint limits
         ub = robot.limits(:,2) - t_vec; % Upper joint limits
 
         % Solve least-squares optimization
-        dq_vec = lsqlin(C,d,[],[],[],[],lb,ub)
-
-        % "Estimated error" i.e. minimum of the objective function
-        est_err = norm(C*dq_vec - d)
+        x0 = zeros(7,1);
+        options = optimoptions('lsqlin','Algorithm','active-set');
+        [dq_vec,resnorm] = lsqlin(C,d,[],[],[],[],lb,ub,x0,options)
 
         % updating values for next iteration
         t_new = t_vec + dq_vec;
