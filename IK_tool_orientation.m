@@ -90,7 +90,7 @@ function [t_vec, t_vec_mat] = IK_tool_orientation(robot, config_a, config_b, plo
         d = [sqrt(zeta)*d1; sqrt(eta)*d2];
         x0 = zeros(7,1);
         options = optimoptions('lsqlin','Algorithm','active-set');
-        [dq_vec,resnorm] = lsqlin(C,d,[],[],[],[],lb,ub,x0,options)
+        [dq_vec,resnorm] = lsqlin(C,d,[],[],[],[],lb,ub,x0,options);
 
         % updating values for next iteration
         t_new = t_vec + dq_vec;

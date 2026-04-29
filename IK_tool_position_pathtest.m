@@ -119,9 +119,9 @@ ylabel('Orientation Change [rad]')
 grid on 
 box on
 
-% Generate a gif
-figure
-wp_vec_w_start = [t_vec;wp_vec];
-IK_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_pathtest.gif')
-figure 
-IK_MRB_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_mlpathtest.gif')
+% % Generate gifs
+% figure
+% wp_vec_w_start = [t_vec;wp_vec];
+% IK_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_pathtest.gif')
+% figure 
+% IK_MRB_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_mlpathtest.gif')

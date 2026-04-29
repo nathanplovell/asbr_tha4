@@ -44,19 +44,19 @@
 % test5 = [0 0 0 -pi/12 0 0 0];
 % test6 = [0 0 0 pi/12 0 0 0];
 
-function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(panda, test1, test2)
+function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(robot, test1, test2)
 
     % Plot 
-    T1 = FK_space(panda, test1, true);
+    T1 = FK_space(robot, test1, true);
     pause(1)
-    T2 = FK_space(panda, test2, true);
+    T2 = FK_space(robot, test2, true);
     pause(1)
     
     % Solve for the transformations to reach the goal
-    [test_result, t_vec_mat] = IK_tool_orientation(panda, test1, T2, true);
+    [test_result, t_vec_mat] = IK_tool_orientation(robot, test1, T2, true);
     
     % Plot and verify the final position is within 3mm of the goal
-    T_f = FK_space(panda, test_result, 1);
+    T_f = FK_space(robot, test_result, 1);
 
     p_goal = T2(1:3,4);
     p_f = T_f(1:3, 4);
@@ -76,7 +76,7 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(panda, 
     % Calculate the translation errors and rotation changes
     for i = 1:(size(t_vec_mat,1) - 1)
         % Configuration of the current iteration
-        T_it = FK_space(panda,t_vec_mat(i+1,:),0);
+        T_it = FK_space(robot,t_vec_mat(i+1,:),0);
 
         % Position and orientation of the current iteration
         R_it = T_it(1:3,1:3);
@@ -87,7 +87,7 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(panda, 
 
         % Calculate the angle of rotation betweent the current and previous
         % configurations
-        T_prev = FK_space(panda,t_vec_mat(i,:),0);
+        T_prev = FK_space(robot,t_vec_mat(i,:),0);
         R_prev = T_prev(1:3,1:3);
         dR = R_it*R_prev';
         theta(i) = acos((trace(dR)-1)/2);

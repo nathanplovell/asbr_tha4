@@ -23,7 +23,7 @@
 % Outputs:
 % test = a boolean; true if the final position of the end effector is
 % within 3 mm of the target point
-% numit = number of iterations for convergence on final configuration
+% N = number of iterations for convergence on final configuration
 % e_f = final translation error (distance between the final end-effector 
 % position and the goal point, in m
 % e_avg = average translation error (average distance between the configuration 
@@ -44,15 +44,15 @@
 % test5 = [0 0 0 -pi/12 0 0 0];
 % test6 = [0 0 0 pi/12 0 0 0];
 
-function [test, numit, e_f, e_avg, theta_avg] = IK_tool_position_test(panda, test1, test2)
+function [test, N, e_f, e_avg, theta_avg] = IK_tool_position_test(robot, test1, test2)
 
     % Calculate FK and plot
-    T1 = FK_space(panda, test1, 1);
+    T1 = FK_space(robot, test1, 1);
     hold on
-    T2 = FK_space(panda, test2, 0);
+    T2 = FK_space(robot, test2, 0);
 
     % Plot the goal point as a red sphere
-    r = 0.03; % radius (10x for ease of visualization)
+    r = 0.003; % radius (10x for ease of visualization)
     [sx, sy, sz] = sphere(30);
 
     % Scale and move sphere
@@ -64,10 +64,13 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_position_test(panda, tes
     surf(sx, sy, sz, 'FaceColor', 'magenta', 'EdgeColor', 'none', 'FaceAlpha','0.5');
     
     % Solve for the transformations to reach the goal
-    [test_result, t_vec_mat] = IK_tool_position(panda, test1, T2, true);
+    [test_result, t_vec_mat] = IK_tool_position(robot, test1, T2, true);
     
     % Plot and verify the final position is within 3mm of the goal
-    T_f = FK_space(panda, test_result, 1);
+    cla
+    T_f = FK_space(robot, test_result, 1);
+    hold on
+    surf(sx, sy, sz, 'FaceColor', 'magenta', 'EdgeColor', 'none', 'FaceAlpha','0.5');
 
     p_goal = T2(1:3,4);
     p_f = T_f(1:3, 4);
@@ -82,12 +85,12 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_position_test(panda, tes
     end
 
     % Calculate number of iterations
-    numit = size(t_vec_mat,1) - 1;
+    N = size(t_vec_mat,1) - 1;
 
     % Calculate the translation errors and rotation changes
     for i = 1:(size(t_vec_mat,1) - 1)
         % Configuration of the current iteration
-        T_it = FK_space(panda,t_vec_mat(i+1,:),0);
+        T_it = FK_space(robot,t_vec_mat(i+1,:),0);
 
         % Position and orientation of the current iteration
         R_it = T_it(1:3,1:3);
@@ -98,7 +101,7 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_position_test(panda, tes
 
         % Calculate the angle of rotation betweent the current and previous
         % configurations
-        T_prev = FK_space(panda,t_vec_mat(i,:),0);
+        T_prev = FK_space(robot,t_vec_mat(i,:),0);
         R_prev = T_prev(1:3,1:3);
         dR = R_it*R_prev';
         theta(i) = acos((trace(dR)-1)/2);
