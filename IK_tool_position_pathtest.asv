@@ -1,11 +1,7 @@
 %% %% ME384R - ASBR - THA4
 % Written by Clara Summerford and Nathan Lovell
 %
-% Test script that commands a robot (in this case, the 'panda' object)
-% to follow a path in space using the linear least-squares solver in
-% IK_tool_position.m. The script plots the robot's configurations as it
-% traces out the path, solving for a series of waypoints successively. Also
-% outputs plots of translation error and orientation change.
+% Test script
 
 clear
 clc
@@ -92,7 +88,7 @@ box on
 
 for k = 1:length(wp_vec)-1
     if k == 1
-        T_prev = start;
+        T_prev = start
     else
         T_prev = FK_space(panda,wp_vec(k-1,:),0); % Previous configuration 
     end
@@ -104,17 +100,19 @@ for k = 1:length(wp_vec)-1
     R_wp = T_wp(1:3,1:3);
 
     % Calculate orientation change
-    dR = R_wp*R_prev';
-    theta(k) = acos((trace(dR)-1)/2); % Orientation change, in rad
+    dR = R_it*R_prev';
+    theta(i) = acos((trace(dR)-1)/2);
 
+
+    e_wp(k) = norm(p_goal-p_wp); % Translation error at each waypoint
 end
 
-it_vec = 2:length(wp_vec);
-
 figure
-plot(it_vec,theta,'-mo')
-ylim([0 0.3])
+plot(e_wp,'-bo')
+ylim([0 0.004])
+yline(0.003,'r','LineWidth',1.5)
+legend('Translation Error','3mm Tolerance')
 xlabel('Waypoint Number')
-ylabel('Orientation Change [rad]')
+ylabel('Translation Error [m]')
 grid on 
 box on

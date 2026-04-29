@@ -3,7 +3,7 @@
 %
 % Test script that commands a robot (in this case, the 'panda' object)
 % to follow a path in space using the linear least-squares solver in
-% IK_tool_position.m. The script plots the robot's configurations as it
+% IK_tool_orientat.m. The script plots the robot's configurations as it
 % traces out the path, solving for a series of waypoints successively. Also
 % outputs plots of translation error and orientation change.
 
@@ -52,7 +52,7 @@ wp_vec = [];
 
 for r = 1:(size(wp,2)-1)
     % Solve for the new joint angles
-    [t_vec, t_vec_mat] = IK_tool_position(panda, t_vec, wp{r+1}, true);
+    [t_vec, t_vec_mat] = IK_tool_orientation(panda, t_vec, wp{r+1}, true);
 
     % Store each t_vec in a waypoint vector
     wp_vec = [wp_vec;t_vec];

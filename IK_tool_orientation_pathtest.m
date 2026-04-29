@@ -1,32 +1,54 @@
+%% %% ME384R - ASBR - THA4
+% Written by Clara Summerford and Nathan Lovell
+%
+% Test script that commands a robot (in this case, the 'panda' object)
+% to follow a path in space using the linear least-squares solver in
+% IK_tool_orientation.m. The script plots the robot's configurations as it
+% traces out the path, solving for a series of waypoints successively. Also
+% outputs plots of translation error and orientation change.
+
+clear
+clc
 close all
 
-% Define a starting position
-t_vec = [0 0 0 -pi/2 0 pi/4 0];
-start = FK_space(panda,t_vec,1);
+run PandaParamsWithTool
 
-% Define a series of waypoints along an arbitrary path. As an example, the
-% below waypoints trace out an L shape.
+% Define a starting position
+t_vec = [0 0 0 -pi/2 0 0 0];
+start = FK_space(panda,t_vec,1);
+hold on
+
+%%% Define a series of waypoints along an arbitrary path. As an example, the
+%%% below waypoints trace out an L shape.
 
 % Initialize
 wp{1} = start;
-dz = [0 0 0 0; 0 0 0 0; 0 0 0 -0.05; 0 0 0 0]; % Subtract 50mm in negative z direction
 
+% Create waypoints of the vertical part of the L
+dz = [0 0 0 0; 0 0 0 0; 0 0 0 -0.05; 0 0 0 0]; % Subtract 50mm in negative z direction
 for i = 1:5
     waypoint =  wp{i} + dz;
     wp{i+1} = waypoint;
 end
 
+% Create waypoints of the horizontal part of the L
 dx = [0 0 0 0.05; 0 0 0 0; 0 0 0 0; 0 0 0 0]; % Add 50mm in positive x direction
-
 for i = 6:10
     waypoint =  wp{i} + dx;
     wp{i+1} = waypoint;
 end
 
+% Build and plot the L shape
+for u = 1:length(wp)
+    L(u,:) = wp{u}(1:3,4)';
+end
 
-% Control robot path along the waypoints iteratively
+plot3(L(:,1),L(:,2),L(:,3),'-m','LineWidth',1.5)
+
+%%% Control robot path along the waypoints iteratively
+
 % Initialize
-wp_vec = []
+wp_vec = [];
 
 for r = 1:(size(wp,2)-1)
     % Solve for the new joint angles
@@ -40,5 +62,59 @@ end
 for k = 1:length(wp_vec)
     cla
     config = FK_space(panda,wp_vec(k,:),1);
+    hold on
+    plot3(L(:,1),L(:,2),L(:,3),'-m','LineWidth',1.5)
     pause(1)
 end
+
+%%% Analyze and plot translation error and a
+
+% Calculate final translation error for each waypoint
+for k = 1:length(wp_vec)
+    p_goal = wp{k+1}(1:3,4); % Goal point for each waypoint
+    T_wp = FK_space(panda,wp_vec(k,:),0); % Actual configuration at that waypoint   
+    p_wp = T_wp(1:3,4);
+
+    e_wp(k) = norm(p_goal-p_wp); % Translation error at each waypoint
+end
+
+figure
+plot(e_wp,'-bo')
+ylim([0 0.004])
+yline(0.003,'r','LineWidth',1.5)
+legend('Translation Error','3mm Tolerance')
+xlabel('Waypoint Number')
+ylabel('Translation Error [m]')
+grid on 
+box on
+
+% Calculate change in rotation between waypoints
+
+for k = 1:length(wp_vec)-1
+    if k == 1
+        T_prev = start;
+    else
+        T_prev = FK_space(panda,wp_vec(k-1,:),0); % Previous configuration 
+    end
+
+    T_wp = FK_space(panda,wp_vec(k,:),0); % Current configuration  
+
+    % Extract rotation matrices
+    R_prev = T_prev(1:3,1:3);
+    R_wp = T_wp(1:3,1:3);
+
+    % Calculate orientation change
+    dR = R_wp*R_prev';
+    theta(k) = acos((trace(dR)-1)/2); % Orientation change, in rad
+
+end
+
+it_vec = 2:length(wp_vec);
+
+figure
+plot(it_vec,theta,'-mo')
+%ylim([0 0.3])
+xlabel('Waypoint Number')
+ylabel('Orientation Change [rad]')
+grid on 
+box on

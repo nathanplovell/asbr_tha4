@@ -92,9 +92,6 @@ function [t_vec, t_vec_mat] = IK_tool_orientation(robot, config_a, config_b, plo
         options = optimoptions('lsqlin','Algorithm','active-set');
         [dq_vec,resnorm] = lsqlin(C,d,[],[],[],[],lb,ub,x0,options)
 
-        % "Estimated error" i.e. minimum of the objective function
-        est_err = norm(C*dq_vec - d)
-
         % updating values for next iteration
         t_new = t_vec + dq_vec;
         t_vec = t_new;
