@@ -52,10 +52,10 @@ wp_vec = [];
 
 for r = 1:(size(wp,2)-1)
     % Solve for the new joint angles
-    [t_vec, t_vec_mat] = IK_tool_position(panda, t_vec, wp{r+1}, true);
+    [t_vec_curr, t_vec_mat] = IK_tool_position(panda, t_vec, wp{r+1}, true);
 
     % Store each t_vec in a waypoint vector
-    wp_vec = [wp_vec;t_vec];
+    wp_vec = [wp_vec;t_vec_curr];
 end
 
 % Plot the waypoint configurations one by one
@@ -67,7 +67,7 @@ for k = 1:length(wp_vec)
     pause(1)
 end
 
-%%% Analyze and plot translation error and a
+%%% Analyze and plot translation error and rotation change
 
 % Calculate final translation error for each waypoint
 for k = 1:length(wp_vec)
@@ -118,3 +118,10 @@ xlabel('Waypoint Number')
 ylabel('Orientation Change [rad]')
 grid on 
 box on
+
+% Generate a gif
+figure
+wp_vec_w_start = [t_vec;wp_vec];
+IK_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_pathtest.gif')
+figure 
+IK_MRB_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_mlpathtest.gif')

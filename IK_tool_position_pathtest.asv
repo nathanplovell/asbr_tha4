@@ -1,7 +1,11 @@
 %% %% ME384R - ASBR - THA4
 % Written by Clara Summerford and Nathan Lovell
 %
-% Test script
+% Test script that commands a robot (in this case, the 'panda' object)
+% to follow a path in space using the linear least-squares solver in
+% IK_tool_position.m. The script plots the robot's configurations as it
+% traces out the path, solving for a series of waypoints successively. Also
+% outputs plots of translation error and orientation change.
 
 clear
 clc
@@ -48,10 +52,10 @@ wp_vec = [];
 
 for r = 1:(size(wp,2)-1)
     % Solve for the new joint angles
-    [t_vec, t_vec_mat] = IK_tool_position(panda, t_vec, wp{r+1}, true);
+    [t_vec_curr, t_vec_mat] = IK_tool_position(panda, t_vec, wp{r+1}, true);
 
     % Store each t_vec in a waypoint vector
-    wp_vec = [wp_vec;t_vec];
+    wp_vec = [wp_vec;t_vec_curr];
 end
 
 % Plot the waypoint configurations one by one
@@ -63,7 +67,7 @@ for k = 1:length(wp_vec)
     pause(1)
 end
 
-%%% Analyze and plot translation error and a
+%%% Analyze and plot translation error and rotation change
 
 % Calculate final translation error for each waypoint
 for k = 1:length(wp_vec)
@@ -88,7 +92,7 @@ box on
 
 for k = 1:length(wp_vec)-1
     if k == 1
-        T_prev = start
+        T_prev = start;
     else
         T_prev = FK_space(panda,wp_vec(k-1,:),0); % Previous configuration 
     end
@@ -100,19 +104,24 @@ for k = 1:length(wp_vec)-1
     R_wp = T_wp(1:3,1:3);
 
     % Calculate orientation change
-    dR = R_it*R_prev';
-    theta(i) = acos((trace(dR)-1)/2);
+    dR = R_wp*R_prev';
+    theta(k) = acos((trace(dR)-1)/2); % Orientation change, in rad
 
-
-    e_wp(k) = norm(p_goal-p_wp); % Translation error at each waypoint
 end
 
+it_vec = 2:length(wp_vec);
+
 figure
-plot(e_wp,'-bo')
-ylim([0 0.004])
-yline(0.003,'r','LineWidth',1.5)
-legend('Translation Error','3mm Tolerance')
+plot(it_vec,theta,'-mo')
+ylim([0 0.3])
 xlabel('Waypoint Number')
-ylabel('Translation Error [m]')
+ylabel('Orientation Change [rad]')
 grid on 
 box on
+
+% Generate a gif
+figure
+wp_vec_w_start = [t_vec;wp_vec];
+IK_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_pathtest.gif')
+figure 
+IK_MRB_gif_w_path(panda,wp_vec_w_start,'IK_tool_position_mlpathtest.gif')

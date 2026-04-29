@@ -111,7 +111,10 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_position_test(panda, tes
     % Calculate the average change in rotation between iterations
     theta_avg = sum(theta)/length(theta);
 
-    % Visualize the iterations
+    % % Visualize the iterations
+    % figure
     % IK_gif(panda,t_vec_mat,'IK_tool_position_test1.gif')
+    % figure
+    % IK_MRB_gif(t_vec_mat,'IK_tool_position_mltest1.gif')
 
 end
