@@ -44,7 +44,7 @@
 % test5 = [0 0 0 -pi/12 0 0 0];
 % test6 = [0 0 0 pi/12 0 0 0];
 
-function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(robot, test1, test2)
+function [test, N, e_f, e_avg, theta_avg] = IK_tool_orientation_test(robot, test1, test2)
 
     % Plot 
     T1 = FK_space(robot, test1, true);
@@ -71,7 +71,7 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(robot, 
     end
 
     % Calculate number of iterations
-    numit = size(t_vec_mat,1) - 1;
+    N = size(t_vec_mat,1) - 1;
 
     % Calculate the translation errors and rotation changes
     for i = 1:(size(t_vec_mat,1) - 1)
@@ -102,7 +102,7 @@ function [test, numit, e_f, e_avg, theta_avg] = IK_tool_orientation_test(robot, 
 
     % % Visualize the iterations
     % figure
-    % IK_gif(panda,t_vec_mat,'IK_tool_orientation_test1.gif')
+    % IK_gif(robot,t_vec_mat,'IK_tool_orientation_test1.gif')
     % figure
     % IK_MRB_gif(t_vec_mat,'IK_tool_orientation_mltest1.gif')
 

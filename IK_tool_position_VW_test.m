@@ -4,7 +4,8 @@
 % Tests the output of IK_tool_position.m to ensure that it passes the
 % constraint of staying 3mm from the goal point. Also returns four
 % performance measures for analysis, and plots the starting, target, and 
-% end configurations of the robot.
+% end configurations of the robot. This code is also an ATTEMPT to incldude
+% a virtual wall constraint.
 %
 % Inputs:
 % robot = a struct of the following form:
@@ -44,7 +45,7 @@
 % test5 = [0 0 0 -pi/12 0 0 0];
 % test6 = [0 0 0 pi/12 0 0 0];
 
-function [test, N, e_f, e_avg, theta_avg] = IK_tool_position_test(robot, test1, test2)
+function [test, N, e_f, e_avg, theta_avg] = IK_tool_position_VW_test(robot, test1, test2)
 
     % Calculate FK and plot
     T1 = FK_space(robot, test1, 1);
@@ -64,7 +65,7 @@ function [test, N, e_f, e_avg, theta_avg] = IK_tool_position_test(robot, test1, 
     surf(sx, sy, sz, 'FaceColor', 'magenta', 'EdgeColor', 'none', 'FaceAlpha','0.5');
     
     % Solve for the transformations to reach the goal
-    [test_result, t_vec_mat] = IK_tool_position(robot, test1, T2, true);
+    [test_result, t_vec_mat] = IK_tool_position_VW(robot, test1, T2, true);
     
     % Plot and verify the final position is within 3mm of the goal
     T_f = FK_space(robot, test_result, 1);
@@ -112,8 +113,8 @@ function [test, N, e_f, e_avg, theta_avg] = IK_tool_position_test(robot, test1, 
     theta_avg = sum(theta)/length(theta);
 
     % % Visualize the iterations
-    % figure
-    % IK_gif(robot,t_vec_mat,'IK_tool_position_test1.gif')
+    figure
+    IK_gif(robot,t_vec_mat,'IK_tool_position_VW_test3.gif')
     % figure
     % IK_MRB_gif(t_vec_mat,'IK_tool_position_mltest1.gif')
 
